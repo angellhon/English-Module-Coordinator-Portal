@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VTC Youth College - Module Schedule & Assessment Contact Hour Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
+
+    <header class="bg-slate-900 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl shadow-inner">
+                    <i data-lucide="calculator" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">VTC Youth College — English Module Coordinator Portal</h1>
+                    <p class="text-xs text-slate-400">DVE Module Schedule, Contact Hours & Assessment Clash Calculator</p>
+                </div>
+            </div>
+
+            <!-- Global Quick Status Indicator -->
+            <div class="flex items-center gap-3">
+                <div id="quick-alert-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span id="quick-alert-text">All assessment dates calculated & clash-free</span>
+                </div>
+                <button onclick="resetToDemoData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 border border-slate-700">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    Reset Sample Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 mt-2 flex gap-2 border-b border-slate-800">
+            <button id="tab-btn-calculator" onclick="switchTab('calculator')" class="px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 bg-white text-slate-900 shadow-sm">
+                <i data-lucide="clock" class="w-4 h-4"></i> Calculator & Timeline
+            </button>
+            <button id="tab-btn-calendar" onclick="switchTab('calendar')" class="px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="calendar" class="w-4 h-4"></i> Master Calendar
+            </button>
+            <button id="tab-btn-activities" onclick="switchTab('activities')" class="px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="calendar-off" class="w-4 h-4"></i> School Events & Holidays
+            </button>
+            <button id="tab-btn-report" onclick="switchTab('report')" class="px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="file-check-2" class="w-4 h-4"></i> QA Audit Summary
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- TAB 1: Calculator & Timeline -->
+        <section id="tab-calculator" class="tab-content space-y-6">
+            
+            <!-- Active Module Toolbar -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <label for="module-selector" class="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Active Module:</label>
+                    <select id="module-selector" onchange="onModuleSelect()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-96">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <button onclick="openModuleModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add New DVE Module
+                </button>
+            </div>
+
+            <!-- Module Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Module Info Overview -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="md-code" class="text-xl font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">VEN1102</span>
+                        <span id="md-total-hours" class="text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">26 Hours</span>
+                    </div>
+                    <h2 id="md-stream" class="font-bold text-slate-800 text-sm mb-1">Year 1 — Semester 1</h2>
+                    <p class="text-xs text-slate-500 flex items-center gap-1">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span id="md-lecturer">Module Coordinator</span>
+                    </p>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Teaching Start Date:</span>
+                        <span id="md-start-date" class="font-semibold text-slate-800">2026-09-01</span>
+                    </div>
+                </div>
+
+                <!-- Timetable Weekly Slots -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-600"></i> Weekly Timetable Slots
+                        </h3>
+                        <button onclick="openTimetableSlotModal()" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center gap-1">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Slot
+                        </button>
+                    </div>
+                    <div id="timetable-slots-list" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Assessment Trigger Thresholds -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <i data-lucide="target" class="w-4 h-4 text-rose-600"></i> Assessment Targets (TA / IA)
+                        </h3>
+                        <button onclick="openAssessmentModal()" class="text-xs text-rose-600 font-semibold hover:underline flex items-center gap-1">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Assessment
+                        </button>
+                    </div>
+                    <div id="assessments-list" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Policy Alert Banner -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-start gap-3">
+                <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+                <div>
+                    <span class="font-bold block text-amber-950 mb-0.5">VTC Youth College Assessment Policy Notice:</span>
+                    <p class="text-amber-800">Topic Assessments (TA), Integrated Assessments (IA), and Institutional Assessment Periods must strictly be held on <strong>weekdays (Monday through Friday)</strong>. The calculation engine automatically postpones assessment triggers from weekends to the next weekday session.</p>
+                </div>
+            </div>
+
+            <!-- Clash & Conflict Alert Matrix -->
+            <div id="clash-matrix-container" class="space-y-2">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Calculated Session Schedule & Contact Hours Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Calculated Module Delivery & Assessment Timeline</h3>
+                        <p class="text-xs text-slate-500">Cumulative contact hours are calculated session-by-session based on weekly pattern and VTC calendar suspensions.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <label for="timeline-filter-type" class="text-xs font-bold text-slate-600 whitespace-nowrap flex items-center gap-1">
+                            <i data-lucide="filter" class="w-3.5 h-3.5 text-indigo-600"></i> View Mode:
+                        </label>
+                        <select id="timeline-filter-type" onchange="renderCalculatedTimeline()" class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
+                            <option value="ASSESSMENTS_ONLY" selected>🎯 Target Assessments & Suspensions Only</option>
+                            <option value="ALL">📋 Complete Delivery Log (All Sessions)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 font-bold uppercase tracking-wider">
+                                <th class="p-3">Session #</th>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Day</th>
+                                <th class="p-3">Time Slot</th>
+                                <th class="p-3 text-center">Duration</th>
+                                <th class="p-3 text-center">Cumulative Hours</th>
+                                <th class="p-3">Session Type / Event</th>
+                                <th class="p-3">Conflict Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calculated-timeline-tbody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: Master Calendar -->
+        <section id="tab-calendar" class="tab-content space-y-4 hidden">
+            <!-- Calendar Controls Header -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="prevMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-600 transition">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <h2 id="calendar-month-year-label" class="text-base font-extrabold text-slate-800 min-w-[150px] text-center">
+                        September 2026
+                    </h2>
+                    <button onclick="nextMonth()" class="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-600 transition">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="goToToday()" class="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg hover:bg-slate-50">
+                        Today
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <!-- Category Filter: Public Holidays, School Activities -->
+                    <div class="flex items-center gap-2">
+                        <label for="calendar-filter-type" class="text-xs font-bold text-slate-500 whitespace-nowrap">Category Filter:</label>
+                        <select id="calendar-filter-type" onchange="renderCalendar()" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="ALL">All Events & Holidays</option>
+                            <option value="HOLIDAY">🔴 Public Holidays Only</option>
+                            <option value="ACTIVITY">🟣 School Events & Periods</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Color Legend -->
+            <div class="flex flex-wrap items-center gap-4 text-xs bg-white p-3 rounded-lg border border-slate-200">
+                <span class="font-bold text-slate-500">Legend:</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500 inline-block"></span> 🔴 Public Holiday</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> 📝 Assessment Period (Mon-Fri)</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-purple-600 inline-block"></span> 🟣 School Activity</span>
+            </div>
+
+            <!-- Master Calendar Grid -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="grid grid-cols-7 bg-slate-100 text-center text-xs font-bold text-slate-600 border-b border-slate-200 py-2.5">
+                    <div class="text-rose-600">Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div class="text-rose-600">Sat</div>
+                </div>
+                <div id="calendar-days-container" class="grid grid-cols-7 text-xs">
+                    <!-- Calendar days populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: School Events & Holidays -->
+        <section id="tab-activities" class="tab-content space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Add Activity / Event Form -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center justify-between">
+                        <span>Register Event / Assessment Period</span>
+                        <i data-lucide="calendar-plus" class="w-4 h-4 text-purple-600"></i>
+                    </h3>
+                    
+                    <form id="form-add-activity" onsubmit="handleAddActivity(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Title / Name</label>
+                            <input type="text" id="act-title" required placeholder="e.g. Mid-term Assessment Period" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Type</label>
+                                <select id="act-type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                                    <option value="HOLIDAY">Public Holiday</option>
+                                    <option value="EVENT">Youth College Event</option>
+                                    <option value="ASSESSMENT_PERIOD">School Assessment Period</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Impact Rule</label>
+                                <select id="act-impact" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                                    <option value="FULL_SUSPENSION">Full Day Suspension (No Classes/Assessments)</option>
+                                    <option value="NO_ASSESSMENT">Classes Allowed (No Module Assessments)</option>
+                                    <option value="ASSESSMENT_ONLY">Assessment Window Only (Classes Suspended)</option>
+                                    <option value="INFO_ONLY">Informational Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Start Date</label>
+                                <input type="date" id="act-date" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">End Date (Optional)</label>
+                                <input type="date" id="act-end-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                            </div>
+                        </div>
+
+                        <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200">
+                            <strong>Note:</strong> Assessment Periods apply to weekdays (Mon–Fri) only. Saturdays and Sundays within the period are automatically excluded from assessment operations.
+                        </p>
+
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add to Academic Calendar
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Activities & Holidays List Table -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-sm">Academic Calendar Suspensions, Assessment Periods & Events</h3>
+                        <span id="activity-count-badge" class="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-0.5 rounded">0 Registered</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[500px]">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="bg-slate-100 sticky top-0 font-bold text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-2.5">Date / Range</th>
+                                    <th class="p-2.5">Title</th>
+                                    <th class="p-2.5">Type</th>
+                                    <th class="p-2.5">Impact</th>
+                                    <th class="p-2.5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="school-activities-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: QA Audit Summary Report -->
+        <section id="tab-report" class="tab-content space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <div class="flex items-center justify-between border-b pb-4 no-print">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">Quality Assurance (QA) Delivery & Assessment Report</h2>
+                        <p class="text-xs text-slate-500">Formal verification document for Youth College Academic Board auditing.</p>
+                    </div>
+                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Print Official Report
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-start border-b border-slate-200 pb-4">
+                        <div>
+                            <p class="font-extrabold text-lg text-slate-900">VOCATIONAL TRAINING COUNCIL</p>
+                            <p class="font-bold text-sm text-indigo-700">YOUTH COLLEGE - DVE VOCATIONAL ENGLISH MODULE DELIVERY</p>
+                            <p class="text-xs text-slate-500 mt-1">QA Form QA-04: Module Contact Hour & Assessment Date Validation</p>
+                        </div>
+                        <div class="text-right text-xs text-slate-500">
+                            <p>Academic Year: 2026/2027</p>
+                            <p>Date Generated: <span id="report-date-stamp"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+                        <div>
+                            <span class="text-slate-500 block">Module Code & Title:</span>
+                            <span id="report-md-title" class="font-bold text-slate-800">VEN1102</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Semester / Level:</span>
+                            <span id="report-md-stream" class="font-bold text-slate-800">Year 1 — Semester 1</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Module Coordinator:</span>
+                            <span id="report-md-teacher" class="font-bold text-slate-800">Lecturer</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Target Contact Hours:</span>
+                            <span id="report-md-hours" class="font-bold text-slate-800">26 Hours</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">1. Validated Assessment Timetable (TA & IA — Weekday Mon-Fri Exclusively)</h4>
+                        <table class="w-full text-left border border-slate-300 text-xs">
+                            <thead class="bg-slate-100 font-bold border-b border-slate-300">
+                                <tr>
+                                    <th class="p-2 border-r border-slate-300">Assessment Title</th>
+                                    <th class="p-2 border-r border-slate-300 text-center">Req. Contact Hour</th>
+                                    <th class="p-2 border-r border-slate-300">Calculated Date & Day</th>
+                                    <th class="p-2 border-r border-slate-300">Time Slot</th>
+                                    <th class="p-2 text-center">Actual Cum. Hours At Trigger</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-assessments-tbody" class="divide-y divide-slate-200">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">2. Detailed Delivery Log & Hour Accumulation</h4>
+                        <table class="w-full text-left border border-slate-300 text-xs">
+                            <thead class="bg-slate-100 font-bold border-b border-slate-300">
+                                <tr>
+                                    <th class="p-2">Session</th>
+                                    <th class="p-2">Date (Day)</th>
+                                    <th class="p-2">Time</th>
+                                    <th class="p-2 text-center">Duration</th>
+                                    <th class="p-2 text-center">Cum. Hours</th>
+                                    <th class="p-2">Status / Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-full-log-tbody" class="divide-y divide-slate-200">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pt-8 grid grid-cols-2 gap-8 text-xs">
+                        <div class="border-t border-slate-400 pt-2">
+                            <p class="font-bold text-slate-800">Module Coordinator Signature</p>
+                            <p class="text-slate-500">Date: ________________________</p>
+                        </div>
+                        <div class="border-t border-slate-400 pt-2">
+                            <p class="font-bold text-slate-800">Departmental QA Officer Approval</p>
+                            <p class="text-slate-500">Date: ________________________</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Add Module -->
+    <div id="modal-module" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Add New DVE Module</h3>
+                <button onclick="closeModal('modal-module')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-module" onsubmit="handleSaveModule(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Module Code</label>
+                    <input type="text" id="fm-code" required placeholder="e.g. VEN1102" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Module Title</label>
+                    <input type="text" id="fm-title" required placeholder="e.g. Workplace Correspondence I" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Semester / Level</label>
+                    <input type="text" id="fm-stream" required placeholder="e.g. Year 1 — Semester 1" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Module Coordinator / Lecturer</label>
+                    <input type="text" id="fm-lecturer" required placeholder="e.g. Youth College English Lecturer" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Total Contact Hours</label>
+                        <input type="number" id="fm-hours" required min="1" value="26" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Teaching Start Date</label>
+                        <input type="date" id="fm-startdate" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-module')" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Save Module</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Slot -->
+    <div id="modal-slot" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Add Weekly Timetable Slot</h3>
+                <button onclick="closeModal('modal-slot')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-slot" onsubmit="handleSaveSlot(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Day of Week</label>
+                    <select id="fs-day" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday (Teaching only — No Assessments)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Start Time</label>
+                        <input type="time" id="fs-starttime" required value="09:00" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">End Time</label>
+                        <input type="time" id="fs-endtime" required value="11:00" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Session Duration (Hours)</label>
+                    <input type="number" step="0.5" id="fs-duration" required value="2" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-slot')" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Add Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Assessment Rule -->
+    <div id="modal-assessment" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Add Assessment Target (TA / IA)</h3>
+                <button onclick="closeModal('modal-assessment')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-assessment" onsubmit="handleSaveAssessment(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Assessment Title</label>
+                    <input type="text" id="fa-title" required placeholder="e.g. TA: Topic Assessment" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    <p class="text-[10px] text-indigo-600 mt-1">* Scheduled strictly on weekdays (Mon–Fri). Titles with "IA" or "Integrated Assessment" are held on the final weekday lesson.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Required Hour Trigger</label>
+                        <input type="number" id="fa-reqhours" required value="8" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Duration (Hours)</label>
+                        <input type="number" step="0.5" id="fa-duration" required value="2" min="0.5" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-assessment')" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs z-50 transition transform duration-300 hidden">
+        <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+        <span id="toast-message">Action completed successfully.</span>
+    </div>
+
+    <script>
+        // Default Modules Dataset covering all 14 DVE English Modules
+        const INITIAL_MODULES = [
+            // Year 1 Modules
+            {
+                id: 'mod-ven1102',
+                code: 'VEN1102',
+                title: 'Workplace Correspondence I',
+                stream: 'Year 1 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 26,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '1', startTime: '09:00', endTime: '11:00', duration: 2 },
+                    { id: 's2', day: '3', startTime: '11:00', endTime: '13:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 8, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 26, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven1101',
+                code: 'VEN1101',
+                title: 'Workplace Interaction I',
+                stream: 'Year 1 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 26,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '2', startTime: '09:00', endTime: '11:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 8, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 26, duration: 2 }
+                ]
+            },
+            // Year 2 Modules
+            {
+                id: 'mod-ven1103',
+                code: 'VEN1103',
+                title: 'Workplace Writing I',
+                stream: 'Year 2 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 52,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '1', startTime: '14:00', endTime: '16:00', duration: 2 },
+                    { id: 's2', day: '4', startTime: '10:00', endTime: '12:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 26, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 52, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven2101',
+                code: 'VEN2101',
+                title: 'Workplace Oral Presentation I',
+                stream: 'Year 2 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 52,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '2', startTime: '14:00', endTime: '16:00', duration: 2 },
+                    { id: 's2', day: '5', startTime: '09:00', endTime: '11:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 26, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 52, duration: 2 }
+                ]
+            },
+            // Year 3 Semester 1
+            {
+                id: 'mod-ven2303',
+                code: 'VEN2303',
+                title: 'Workplace Correspondence II',
+                stream: 'Year 3 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 45,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '2', startTime: '09:00', endTime: '12:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven2603',
+                code: 'VEN2603',
+                title: 'Workplace Correspondence II',
+                stream: 'Year 3 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 30,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '3', startTime: '14:00', endTime: '16:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven2302',
+                code: 'VEN2302',
+                title: 'Workplace Oral Interaction II',
+                stream: 'Year 3 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 45,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '4', startTime: '13:00', endTime: '16:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven2602',
+                code: 'VEN2602',
+                title: 'Workplace Oral Interaction II',
+                stream: 'Year 3 — Semester 1',
+                lecturer: 'English Module Coordinator',
+                totalHours: 30,
+                startDate: '2026-09-01',
+                slots: [
+                    { id: 's1', day: '5', startTime: '10:00', endTime: '12:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
+                ]
+            },
+            // Year 3 Semester 2
+            {
+                id: 'mod-ven2304',
+                code: 'VEN2304',
+                title: 'Workplace Writing II',
+                stream: 'Year 3 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 45,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '1', startTime: '09:00', endTime: '12:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven2604',
+                code: 'VEN2604',
+                title: 'Workplace Writing II',
+                stream: 'Year 3 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 30,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '2', startTime: '14:00', endTime: '16:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven3301',
+                code: 'VEN3301',
+                title: 'Workplace Oral Presentation II',
+                stream: 'Year 3 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 60,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '3', startTime: '09:00', endTime: '12:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 27, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 60, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven3601',
+                code: 'VEN3601',
+                title: 'Workplace Oral Presentation II',
+                stream: 'Year 3 — Semester 2',
+                lecturer: 'English Module Coordinator',
+                totalHours: 45,
+                startDate: '2027-02-01',
+                slots: [
+                    { id: 's1', day: '4', startTime: '14:00', endTime: '17:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 21, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
+                ]
+            },
+            // Year 3 Semester 3
+            {
+                id: 'mod-ven3302',
+                code: 'VEN3302',
+                title: 'Workplace Correspondence III',
+                stream: 'Year 3 — Semester 3',
+                lecturer: 'English Module Coordinator',
+                totalHours: 60,
+                startDate: '2027-06-01',
+                slots: [
+                    { id: 's1', day: '1', startTime: '09:00', endTime: '12:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 27, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 60, duration: 2 }
+                ]
+            },
+            {
+                id: 'mod-ven3602',
+                code: 'VEN3602',
+                title: 'Workplace Correspondence III',
+                stream: 'Year 3 — Semester 3',
+                lecturer: 'English Module Coordinator',
+                totalHours: 45,
+                startDate: '2027-06-01',
+                slots: [
+                    { id: 's1', day: '2', startTime: '09:00', endTime: '12:00', duration: 3 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: 21, duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
+                ]
+            }
+        ];
+
+        // Academic Calendar Events & Public Holidays
+        const DEFAULT_SCHOOL_ACTIVITIES = [
+            { id: 'act-1', title: 'National Day', type: 'HOLIDAY', date: '2026-10-01', endDate: '2026-10-01', impact: 'FULL_SUSPENSION' },
+            { id: 'act-2', title: 'Chung Yeung Festival', type: 'HOLIDAY', date: '2026-10-19', endDate: '2026-10-19', impact: 'FULL_SUSPENSION' },
+            { id: 'act-3', title: 'Mid-term Assessment Period (Sem 1)', type: 'ASSESSMENT_PERIOD', date: '2026-11-09', endDate: '2026-11-13', impact: 'NO_ASSESSMENT' },
+            { id: 'act-4', title: 'Youth College Sports Day', type: 'EVENT', date: '2026-11-18', endDate: '2026-11-18', impact: 'NO_ASSESSMENT' },
+            { id: 'act-5', title: 'Christmas Day', type: 'HOLIDAY', date: '2026-12-25', endDate: '2026-12-25', impact: 'FULL_SUSPENSION' },
+            { id: 'act-6', title: 'The first day after Christmas Day', type: 'HOLIDAY', date: '2026-12-26', endDate: '2026-12-26', impact: 'FULL_SUSPENSION' },
+            { id: 'act-7', title: "New Year's Day", type: 'HOLIDAY', date: '2027-01-01', endDate: '2027-01-01', impact: 'FULL_SUSPENSION' },
+            { id: 'act-8', title: 'Lunar New Year Holiday', type: 'HOLIDAY', date: '2027-02-06', endDate: '2027-02-08', impact: 'FULL_SUSPENSION' },
+            { id: 'act-9', title: 'Semester 2 Institutional Assessment Period (Mon-Fri)', type: 'ASSESSMENT_PERIOD', date: '2027-04-12', endDate: '2027-04-16', impact: 'ASSESSMENT_ONLY' },
+            { id: 'act-10', title: 'Good Friday & Easter', type: 'HOLIDAY', date: '2027-03-26', endDate: '2027-03-29', impact: 'FULL_SUSPENSION' },
+            { id: 'act-11', title: 'Ching Ming Festival', type: 'HOLIDAY', date: '2027-04-05', endDate: '2027-04-05', impact: 'FULL_SUSPENSION' },
+            { id: 'act-12', title: 'Labour Day', type: 'HOLIDAY', date: '2027-05-01', endDate: '2027-05-01', impact: 'FULL_SUSPENSION' },
+            { id: 'act-13', title: 'Birthday of the Buddha', type: 'HOLIDAY', date: '2027-05-13', endDate: '2027-05-13', impact: 'FULL_SUSPENSION' },
+            { id: 'act-14', title: 'Tuen Ng Festival', type: 'HOLIDAY', date: '2027-06-09', endDate: '2027-06-09', impact: 'FULL_SUSPENSION' },
+            { id: 'act-15', title: 'HKSAR Establishment Day', type: 'HOLIDAY', date: '2027-07-01', endDate: '2027-07-01', impact: 'FULL_SUSPENSION' }
+        ];
+
+        // Global Application State
+        let modulesData = JSON.parse(localStorage.getItem('vtc_modules_v3')) || INITIAL_MODULES;
+        let schoolActivities = JSON.parse(localStorage.getItem('vtc_activities')) || DEFAULT_SCHOOL_ACTIVITIES;
+        let selectedModuleId = modulesData[0]?.id || 'mod-ven1102';
+        let currentCalendarDate = new Date(2026, 8, 1);
+
+        // Helper: Parse YYYY-MM-DD reliably without timezone shifts
+        function getDayOfWeekFromISO(dateStr) {
+            if (!dateStr) return 0;
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return 0;
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            return new Date(y, m, d).getDay(); // 0 = Sun, 6 = Sat
+        }
+
+        // Helper: Test if assessment is an IA (Integrated Assessment)
+        function isIAAssessment(ass) {
+            if (!ass || !ass.title) return false;
+            const t = ass.title.trim().toUpperCase();
+            return t.startsWith('IA') || t.includes('INTEGRATED ASSESSMENT');
+        }
+
+        // Helper: Find activities matching date string (ignoring weekend assessment periods)
+        function findMatchingActivities(dateStr) {
+            const dayOfWeek = getDayOfWeekFromISO(dateStr);
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+            return schoolActivities.filter(a => {
+                const start = a.date;
+                const end = a.endDate || a.date;
+                const isInRange = (dateStr >= start && dateStr <= end);
+                
+                // Exclude assessment periods on weekends
+                if (isInRange && a.type === 'ASSESSMENT_PERIOD' && isWeekend) {
+                    return false;
+                }
+                return isInRange;
+            });
+        }
+
+        // Helper: Calculate raw session list for module
+        function getModuleSessions(module) {
+            if (!module || !module.slots || module.slots.length === 0) return [];
+
+            const rawSessions = [];
+            let currentCumHours = 0;
+            let current = new Date(module.startDate);
+            const maxDate = new Date(current);
+            maxDate.setMonth(maxDate.getMonth() + 8);
+
+            while (currentCumHours < module.totalHours && current <= maxDate) {
+                const dayOfWeek = current.getDay();
+                const dateStr = formatDateISO(current);
+                const matchingSlots = module.slots.filter(s => parseInt(s.day) === dayOfWeek);
+
+                for (const slot of matchingSlots) {
+                    if (currentCumHours >= module.totalHours) break;
+
+                    const matchingActs = findMatchingActivities(dateStr);
+                    const suspensionAct = matchingActs.find(a => a.impact === 'FULL_SUSPENSION' || a.impact === 'ASSESSMENT_ONLY');
+                    
+                    if (suspensionAct) {
+                        rawSessions.push({
+                            isHoliday: true,
+                            holiday: suspensionAct,
+                            dateStr,
+                            dayOfWeek,
+                            slot
+                        });
+                        continue;
+                    }
+
+                    currentCumHours += slot.duration;
+                    rawSessions.push({
+                        isHoliday: false,
+                        dateStr,
+                        dayOfWeek,
+                        slot,
+                        cumHours: Math.min(currentCumHours, module.totalHours)
+                    });
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            return rawSessions;
+        }
+
+        // Engine: Calculate Module Delivery Schedule and Assessment triggers with Weekday Enforcer
+        function calculateModuleTimeline(module) {
+            if (!module || !module.slots || module.slots.length === 0) return [];
+
+            const timeline = [];
+            let currentCumHours = 0;
+
+            const rawSessions = getModuleSessions(module);
+            const nonHolidaySessions = rawSessions.filter(s => !s.isHoliday);
+            const totalTeachingSessions = nonHolidaySessions.length;
+
+            let sessionCounter = 1;
+            let teachingSessionIndex = 0;
+            const pendingAssessments = [...module.assessments];
+            const triggeredAssessments = new Set();
+
+            for (const sess of rawSessions) {
+                if (sess.isHoliday) {
+                    timeline.push({
+                        sessionNo: '-',
+                        date: sess.dateStr,
+                        dayName: getDayName(sess.dayOfWeek),
+                        slotTime: `${sess.slot.startTime} - ${sess.slot.endTime}`,
+                        duration: 0,
+                        cumHours: currentCumHours,
+                        status: 'HOLIDAY',
+                        title: `Suspended: ${sess.holiday.title}`,
+                        isAssessment: false,
+                        clash: false,
+                        clashReason: ''
+                    });
+                    continue;
+                }
+
+                teachingSessionIndex++;
+                const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
+                const duration = sess.slot.duration;
+                currentCumHours += duration;
+                const cumHoursClamped = Math.min(currentCumHours, module.totalHours);
+
+                const noAssEvent = schoolActivities.find(a => a.date === sess.dateStr && a.impact === 'NO_ASSESSMENT');
+                const isWeekendSession = (sess.dayOfWeek === 0 || sess.dayOfWeek === 6);
+
+                let matchedAssessment = null;
+
+                // Assessments are strictly scheduled on weekdays (Mon-Fri)
+                if (!isWeekendSession) {
+                    // 1. If last weekday lesson, schedule IA (Integrated Assessment)
+                    if (isLastLesson) {
+                        matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id) && isIAAssessment(a));
+                    }
+
+                    // 2. Schedule non-IA assessments reaching required contact hours
+                    if (!matchedAssessment) {
+                        for (const ass of pendingAssessments) {
+                            if (!triggeredAssessments.has(ass.id) && !isIAAssessment(ass) && cumHoursClamped >= ass.reqHours) {
+                                matchedAssessment = ass;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 3. Fallback trigger
+                    if (!matchedAssessment) {
+                        for (const ass of pendingAssessments) {
+                            if (!triggeredAssessments.has(ass.id) && cumHoursClamped >= ass.reqHours) {
+                                matchedAssessment = ass;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // If it is the absolute final lesson of the module and it lands on a weekend, force trigger to flag clash error
+                    if (isLastLesson && pendingAssessments.some(a => !triggeredAssessments.has(a.id))) {
+                        matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id));
+                    }
+                }
+
+                if (matchedAssessment) {
+                    triggeredAssessments.add(matchedAssessment.id);
+                }
+
+                const clashDetails = checkForClashes(module.code, sess.dateStr, sess.slot.startTime, sess.slot.endTime, !!matchedAssessment, noAssEvent);
+
+                timeline.push({
+                    sessionNo: sessionCounter++,
+                    date: sess.dateStr,
+                    dayName: getDayName(sess.dayOfWeek),
+                    slotTime: `${sess.slot.startTime} - ${sess.slot.endTime}`,
+                    startTime: sess.slot.startTime,
+                    endTime: sess.slot.endTime,
+                    duration: duration,
+                    cumHours: cumHoursClamped,
+                    status: matchedAssessment ? 'ASSESSMENT' : 'LESSON',
+                    title: matchedAssessment ? `🎯 ASSESSMENT: ${matchedAssessment.title}` : `Regular Teaching Session`,
+                    assessmentDetail: matchedAssessment,
+                    isAssessment: !!matchedAssessment,
+                    clash: clashDetails.hasClash,
+                    clashReason: clashDetails.reason
+                });
+            }
+
+            return timeline;
+        }
+
+        // Helper: Calculate timeline lightweight for cross-module clash checks
+        function calculateModuleTimelineForClash(module) {
+            if (!module || !module.slots || module.slots.length === 0) return [];
+
+            const timeline = [];
+            const rawSessions = getModuleSessions(module);
+            const nonHolidaySessions = rawSessions.filter(s => !s.isHoliday);
+            const totalTeachingSessions = nonHolidaySessions.length;
+
+            let currentCumHours = 0;
+            let teachingSessionIndex = 0;
+            const pendingAssessments = [...module.assessments];
+            const triggeredAssessments = new Set();
+
+            for (const sess of rawSessions) {
+                if (sess.isHoliday) continue;
+
+                teachingSessionIndex++;
+                const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
+                const isWeekendSession = (sess.dayOfWeek === 0 || sess.dayOfWeek === 6);
+                currentCumHours += sess.slot.duration;
+                const cumHoursClamped = Math.min(currentCumHours, module.totalHours);
+
+                let matchedAssessment = null;
+
+                if (!isWeekendSession) {
+                    if (isLastLesson) {
+                        matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id) && isIAAssessment(a));
+                    }
+
+                    if (!matchedAssessment) {
+                        for (const ass of pendingAssessments) {
+                            if (!triggeredAssessments.has(ass.id) && !isIAAssessment(ass) && cumHoursClamped >= ass.reqHours) {
+                                matchedAssessment = ass;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!matchedAssessment) {
+                        for (const ass of pendingAssessments) {
+                            if (!triggeredAssessments.has(ass.id) && cumHoursClamped >= ass.reqHours) {
+                                matchedAssessment = ass;
+                                break;
+                            }
+                        }
+                    }
+                } else if (isLastLesson && pendingAssessments.some(a => !triggeredAssessments.has(a.id))) {
+                    matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id));
+                }
+
+                if (matchedAssessment) {
+                    triggeredAssessments.add(matchedAssessment.id);
+                    timeline.push({
+                        date: sess.dateStr,
+                        startTime: sess.slot.startTime,
+                        endTime: sess.slot.endTime,
+                        isAssessment: true,
+                        assessmentDetail: matchedAssessment
+                    });
+                }
+            }
+            return timeline;
+        }
+
+        function saveState() {
+            localStorage.setItem('vtc_modules_v3', JSON.stringify(modulesData));
+            localStorage.setItem('vtc_activities', JSON.stringify(schoolActivities));
+        }
+
+        function renderAll() {
+            saveState();
+            renderModuleSelector();
+            renderSelectedModuleDetails();
+            renderTimetableSlots();
+            renderAssessmentRules();
+            renderCalculatedTimeline();
+            renderMasterClashReport();
+            renderCalendar();
+            renderSchoolActivitiesTable();
+            renderQAReport();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function checkForClashes(currentCode, dateStr, startTime, endTime, isAssessment) {
+            const dayOfWeek = getDayOfWeekFromISO(dateStr);
+
+            // Weekend Assessment Enforcement Check
+            if (isAssessment && (dayOfWeek === 0 || dayOfWeek === 6)) {
+                return {
+                    hasClash: true,
+                    reason: `Weekend Conflict: Assessment scheduled on ${dayOfWeek === 6 ? 'Saturday' : 'Sunday'} (Prohibited by VTC Rules)`
+                };
+            }
+
+            const matchingActs = findMatchingActivities(dateStr);
+
+            if (isAssessment) {
+                const noAssEvent = matchingActs.find(a => a.impact === 'NO_ASSESSMENT');
+                if (noAssEvent) {
+                    return { hasClash: true, reason: `Clash: Assessment prohibited (${noAssEvent.title})` };
+                }
+                const fullSuspension = matchingActs.find(a => a.impact === 'FULL_SUSPENSION');
+                if (fullSuspension) {
+                    return { hasClash: true, reason: `Clash: School closed (${fullSuspension.title})` };
+                }
+            } else {
+                const assOnlyEvent = matchingActs.find(a => a.impact === 'ASSESSMENT_ONLY');
+                if (assOnlyEvent) {
+                    return { hasClash: true, reason: `Clash: Teaching suspended during ${assOnlyEvent.title}` };
+                }
+            }
+
+            if (!isAssessment) {
+                return { hasClash: false, reason: '' };
+            }
+
+            for (const mod of modulesData) {
+                if (mod.code === currentCode) continue;
+                const otherTimeline = calculateModuleTimelineForClash(mod);
+                for (const item of otherTimeline) {
+                    if (item.date === dateStr && isTimeOverlap(startTime, endTime, item.startTime, item.endTime)) {
+                        return { 
+                            hasClash: true, 
+                            reason: `Clash with ${mod.code} (${item.assessmentDetail.title})` 
+                        };
+                    }
+                }
+            }
+
+            return { hasClash: false, reason: '' };
+        }
+
+        function getSelectedModule() {
+            return modulesData.find(m => m.id === selectedModuleId) || modulesData[0];
+        }
+
+        function renderModuleSelector() {
+            const select = document.getElementById('module-selector');
+
+            const grouped = {};
+            modulesData.forEach(m => {
+                const groupKey = m.stream || 'Other Modules';
+                if (!grouped[groupKey]) grouped[groupKey] = [];
+                grouped[groupKey].push(m);
+            });
+
+            if (select) {
+                let optionsHtml = '';
+                for (const groupName in grouped) {
+                    optionsHtml += `<optgroup label="${groupName}">`;
+                    grouped[groupName].forEach(m => {
+                        optionsHtml += `<option value="${m.id}" ${m.id === selectedModuleId ? 'selected' : ''}>${m.code} - ${m.title} (${m.totalHours}h)</option>`;
+                    });
+                    optionsHtml += `</optgroup>`;
+                }
+                select.innerHTML = optionsHtml;
+            }
+        }
+
+        function onModuleSelect() {
+            const select = document.getElementById('module-selector');
+            if (select) {
+                selectedModuleId = select.value;
+                renderAll();
+            }
+        }
+
+        function renderSelectedModuleDetails() {
+            const mod = getSelectedModule();
+            if (!mod) return;
+
+            const elCode = document.getElementById('md-code');
+            const elStream = document.getElementById('md-stream');
+            const elLecturer = document.getElementById('md-lecturer');
+            const elHours = document.getElementById('md-total-hours');
+            const elStart = document.getElementById('md-start-date');
+
+            if (elCode) elCode.textContent = mod.code;
+            if (elStream) elStream.textContent = mod.stream;
+            if (elLecturer) elLecturer.textContent = mod.lecturer;
+            if (elHours) elHours.textContent = `${mod.totalHours} Hours`;
+            if (elStart) elStart.textContent = mod.startDate;
+        }
+
+        function renderTimetableSlots() {
+            const mod = getSelectedModule();
+            const container = document.getElementById('timetable-slots-list');
+            if (!container) return;
+
+            if (!mod || !mod.slots || mod.slots.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center border border-dashed rounded-lg">No timetable slots configured. Click "Add Slot" above.</div>`;
+                return;
+            }
+
+            container.innerHTML = mod.slots.map(s => {
+                const isSat = parseInt(s.day) === 6;
+                return `
+                    <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold ${isSat ? 'text-amber-700 bg-amber-50' : 'text-indigo-700 bg-indigo-50'} px-2 py-0.5 rounded">
+                                ${getDayName(s.day)} ${isSat ? '(Teaching Only)' : ''}
+                            </span>
+                            <span class="font-medium text-slate-800">${s.startTime} - ${s.endTime}</span>
+                            <span class="text-slate-500">(${s.duration} hrs)</span>
+                        </div>
+                        <button onclick="deleteSlot('${s.id}')" class="text-slate-400 hover:text-rose-600 transition p-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAssessmentRules() {
+            const mod = getSelectedModule();
+            const container = document.getElementById('assessments-list');
+            if (!container) return;
+
+            if (!mod || !mod.assessments || mod.assessments.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 py-3 text-center border border-dashed rounded-lg">No assessment targets set. Click "Add Assessment" above.</div>`;
+                return;
+            }
+
+            container.innerHTML = mod.assessments.map(a => `
+                <div class="flex items-center justify-between p-2.5 bg-rose-50/50 rounded-lg border border-rose-100 text-xs">
+                    <div>
+                        <p class="font-bold text-slate-800">${a.title}</p>
+                        <p class="text-[11px] text-slate-500">Target Contact Hour: <span class="font-bold text-rose-600">${a.reqHours}h</span> (Duration: ${a.duration}h)</p>
+                    </div>
+                    <button onclick="deleteAssessment('${a.id}')" class="text-slate-400 hover:text-rose-600 transition p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderCalculatedTimeline() {
+            const mod = getSelectedModule();
+            const tbody = document.getElementById('calculated-timeline-tbody');
+            const alertBadge = document.getElementById('quick-alert-badge');
+            const alertText = document.getElementById('quick-alert-text');
+            const viewFilterEl = document.getElementById('timeline-filter-type');
+            const viewFilter = viewFilterEl ? viewFilterEl.value : 'ASSESSMENTS_ONLY';
+
+            if (!mod || !tbody) return;
+
+            let timeline = calculateModuleTimeline(mod);
+            let hasAnyClash = false;
+
+            if (timeline.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 text-xs">Please configure weekly timetable slots to calculate the session timeline.</td></tr>`;
+                return;
+            }
+
+            // Check clashes across full timeline first
+            timeline.forEach(s => { if (s.clash) hasAnyClash = true; });
+
+            // Filter out routine calculation steps if 'ASSESSMENTS_ONLY' mode selected
+            if (viewFilter === 'ASSESSMENTS_ONLY') {
+                timeline = timeline.filter(s => s.isAssessment || s.status === 'HOLIDAY');
+            }
+
+            if (timeline.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 text-xs">No assessments or holiday suspensions found for this filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = timeline.map(s => {
+                let rowBg = 'hover:bg-slate-50';
+                let statusBadge = '';
+
+                if (s.status === 'HOLIDAY') {
+                    rowBg = 'bg-amber-50/60 hover:bg-amber-100/50 text-slate-600';
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-medium">${s.title}</span>`;
+                } else if (s.isAssessment) {
+                    rowBg = 'bg-rose-50 hover:bg-rose-100/70 border-l-4 border-l-rose-500';
+                    statusBadge = `<span class="bg-rose-600 text-white font-bold px-2.5 py-1 rounded shadow-sm">${s.title}</span>`;
+                } else {
+                    statusBadge = `<span class="text-slate-700">${s.title}</span>`;
+                }
+
+                let clashBadge = s.clash 
+                    ? `<span class="bg-rose-100 text-rose-700 border border-rose-300 px-2 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> ${s.clashReason}</span>`
+                    : `<span class="text-emerald-600 font-medium flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Clear</span>`;
+
+                return `
+                    <tr class="${rowBg} transition border-b border-slate-100">
+                        <td class="p-3 font-semibold ${s.isAssessment ? 'text-rose-700 font-bold' : 'text-slate-500'}">${s.sessionNo}</td>
+                        <td class="p-3 font-medium text-slate-800">${s.date}</td>
+                        <td class="p-3 text-slate-600">${s.dayName}</td>
+                        <td class="p-3 font-mono text-slate-600">${s.slotTime}</td>
+                        <td class="p-3 text-center font-medium">${s.duration} hr</td>
+                        <td class="p-3 text-center font-bold ${s.isAssessment ? 'text-rose-700 text-sm' : 'text-slate-800'}">${s.cumHours} / ${mod.totalHours} hrs</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3">${clashBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (alertBadge && alertText) {
+                if (hasAnyClash) {
+                    alertBadge.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium animate-pulse";
+                    alertText.textContent = "Clash Alert: Assessment timing conflict detected!";
+                } else {
+                    alertBadge.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium";
+                    alertText.textContent = "All assessment dates calculated & clash-free (Mon-Fri)";
+                }
+            }
+        }
+
+        function renderMasterClashReport() {
+            const container = document.getElementById('clash-matrix-container');
+            if (!container) return;
+
+            const clashes = [];
+            modulesData.forEach(mod => {
+                const timeline = calculateModuleTimeline(mod);
+                timeline.forEach(s => {
+                    if (s.clash) {
+                        clashes.push({
+                            moduleCode: mod.code,
+                            date: s.date,
+                            time: s.slotTime,
+                            reason: s.clashReason
+                        });
+                    }
+                });
+            });
+
+            if (clashes.length === 0) {
+                container.innerHTML = `
+                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-center gap-3">
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                        <div>
+                            <p class="font-bold">No Schedule Conflicts Found</p>
+                            <p class="text-[11px] text-emerald-700">All planned assessment dates meet target contact hours on weekdays (Mon–Fri) without overlapping other module assessments or VTC holiday suspensions.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = clashes.map(c => `
+                <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-600"></i>
+                        <div>
+                            <p class="font-bold text-rose-900">${c.moduleCode} — ${c.date} (${c.time})</p>
+                            <p class="text-rose-700">${c.reason}</p>
+                        </div>
+                    </div>
+                    <span class="bg-rose-200 text-rose-900 font-bold px-2 py-1 rounded text-[10px]">Action Needed</span>
+                </div>
+            `).join('');
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendar-days-container');
+            const label = document.getElementById('calendar-month-year-label');
+            const filterTypeEl = document.getElementById('calendar-filter-type');
+
+            if (!container || !label) return;
+
+            const filterType = filterTypeEl ? filterTypeEl.value : 'ALL';
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            label.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            let daysHtml = '';
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                daysHtml += `<div class="bg-slate-50 border-b border-r border-slate-200 p-2 min-h-[90px]"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayOfWeek = getDayOfWeekFromISO(dStr);
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+                const matchingActs = findMatchingActivities(dStr);
+                const events = [];
+
+                matchingActs.forEach(act => {
+                    // Filter according to category choice
+                    if (filterType === 'HOLIDAY' && act.type !== 'HOLIDAY') return;
+                    if (filterType === 'ACTIVITY' && act.type === 'HOLIDAY') return;
+
+                    let badgeClass = 'bg-purple-600 text-white font-medium';
+                    if (act.type === 'HOLIDAY') badgeClass = 'bg-amber-500 text-white font-medium';
+                    if (act.type === 'ASSESSMENT_PERIOD') badgeClass = 'bg-blue-600 text-white font-bold';
+
+                    let rangeInfo = '';
+                    if (act.endDate && act.endDate !== act.date) {
+                        const startD = new Date(act.date);
+                        const endD = new Date(act.endDate);
+                        const currentD = new Date(dStr);
+                        const totalDaysCount = Math.round((endD - startD) / (1000 * 60 * 60 * 24)) + 1;
+                        const currentDayNum = Math.round((currentD - startD) / (1000 * 60 * 60 * 24)) + 1;
+                        rangeInfo = ` (${currentDayNum}/${totalDaysCount})`;
+                    }
+
+                    events.push({
+                        title: `${act.type === 'ASSESSMENT_PERIOD' ? '📝 ' : ''}${act.title}${rangeInfo}`,
+                        type: badgeClass,
+                        isAssessment: false
+                    });
+                });
+
+                const isToday = dStr === formatDateISO(new Date());
+
+                daysHtml += `
+                    <div onclick="quickAddActivityForDate('${dStr}')" title="Click to add event/assessment period for ${dStr}" 
+                        class="${isWeekend ? 'bg-slate-50/70' : 'bg-white'} border-b border-r border-slate-200 p-1.5 min-h-[95px] flex flex-col justify-start space-y-1 hover:bg-indigo-50/40 cursor-pointer transition group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold ${isToday ? 'bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center' : (isWeekend ? 'text-slate-400' : 'text-slate-700')}">${day}</span>
+                            <div class="flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-1 overflow-y-auto max-h-[70px]">
+                            ${events.map(e => `
+                                <div class="text-[10px] p-1 rounded leading-tight truncate ${e.type}" title="${e.title}">
+                                    ${e.title}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = daysHtml;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function prevMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentCalendarDate = new Date();
+            renderCalendar();
+        }
+
+        function renderQAReport() {
+            const mod = getSelectedModule();
+            if (!mod) return;
+
+            const dateStampEl = document.getElementById('report-date-stamp');
+            if (dateStampEl) dateStampEl.textContent = new Date().toLocaleDateString();
+
+            const titleEl = document.getElementById('report-md-title');
+            const streamEl = document.getElementById('report-md-stream');
+            const teacherEl = document.getElementById('report-md-teacher');
+            const hoursEl = document.getElementById('report-md-hours');
+
+            if (titleEl) titleEl.textContent = `${mod.code} - ${mod.title}`;
+            if (streamEl) streamEl.textContent = mod.stream;
+            if (teacherEl) teacherEl.textContent = mod.lecturer;
+            if (hoursEl) hoursEl.textContent = `${mod.totalHours} Contact Hours`;
+
+            const timeline = calculateModuleTimeline(mod);
+
+            const assTbody = document.getElementById('report-assessments-tbody');
+            if (assTbody) {
+                const assessmentsFound = timeline.filter(s => s.isAssessment);
+                if (assessmentsFound.length === 0) {
+                    assTbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">No assessment thresholds met or defined yet.</td></tr>`;
+                } else {
+                    assTbody.innerHTML = assessmentsFound.map(s => `
+                        <tr class="bg-rose-50/30 font-medium">
+                            <td class="p-2 border-r border-slate-300 font-bold text-rose-900">${s.assessmentDetail.title}</td>
+                            <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-800">${s.assessmentDetail.reqHours} hrs</td>
+                            <td class="p-2 border-r border-slate-300 font-bold text-indigo-900">${s.date} (${s.dayName})</td>
+                            <td class="p-2 border-r border-slate-300 font-mono">${s.slotTime}</td>
+                            <td class="p-2 text-center font-bold text-emerald-700">${s.cumHours} hrs (Session #${s.sessionNo})</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const logTbody = document.getElementById('report-full-log-tbody');
+            if (logTbody) {
+                logTbody.innerHTML = timeline.map(s => `
+                    <tr class="${s.isAssessment ? 'bg-rose-50 font-semibold' : ''}">
+                        <td class="p-2 text-slate-500">${s.sessionNo}</td>
+                        <td class="p-2 font-medium">${s.date} (${s.dayName})</td>
+                        <td class="p-2 font-mono">${s.slotTime}</td>
+                        <td class="p-2 text-center">${s.duration}</td>
+                        <td class="p-2 text-center font-bold">${s.cumHours}</td>
+                        <td class="p-2 ${s.isAssessment ? 'text-rose-700 font-bold' : ''}">${s.title}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function renderSchoolActivitiesTable() {
+            const tbody = document.getElementById('school-activities-tbody');
+            const badge = document.getElementById('activity-count-badge');
+
+            if (badge) badge.textContent = `${schoolActivities.length} Registered`;
+            if (!tbody) return;
+
+            tbody.innerHTML = schoolActivities.map(a => {
+                const dateDisplay = (a.endDate && a.endDate !== a.date) ? `${a.date} to ${a.endDate}` : a.date;
+                let typeBadgeClass = 'bg-purple-100 text-purple-800';
+                if (a.type === 'HOLIDAY') typeBadgeClass = 'bg-amber-100 text-amber-800';
+                if (a.type === 'ASSESSMENT_PERIOD') typeBadgeClass = 'bg-blue-100 text-blue-800';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2.5 font-bold text-slate-800 whitespace-nowrap">${dateDisplay}</td>
+                        <td class="p-2.5 font-medium text-slate-900">${a.title}</td>
+                        <td class="p-2.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${typeBadgeClass}">
+                                ${a.type.replace('_', ' ')}
+                            </span>
+                        </td>
+                        <td class="p-2.5 text-slate-600">${formatImpact(a.impact)}</td>
+                        <td class="p-2.5 text-right">
+                            <button onclick="deleteActivity('${a.id}')" class="text-slate-400 hover:text-rose-600 p-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleAddActivity(e) {
+            e.preventDefault();
+            const title = document.getElementById('act-title').value.trim();
+            const type = document.getElementById('act-type').value;
+            const date = document.getElementById('act-date').value;
+            const endDateVal = document.getElementById('act-end-date').value;
+            const endDate = (endDateVal && endDateVal >= date) ? endDateVal : date;
+            const impact = document.getElementById('act-impact').value;
+
+            schoolActivities.push({
+                id: 'act-' + Date.now(),
+                title,
+                type,
+                date,
+                endDate,
+                impact
+            });
+
+            document.getElementById('form-add-activity').reset();
+            showToast('School Event / Assessment Period saved');
+            renderAll();
+        }
+
+        function deleteActivity(actId) {
+            schoolActivities = schoolActivities.filter(a => a.id !== actId);
+            showToast('Activity removed');
+            renderAll();
+        }
+
+        function handleSaveModule(e) {
+            e.preventDefault();
+            const code = document.getElementById('fm-code').value.trim().toUpperCase();
+            const title = document.getElementById('fm-title').value.trim();
+            const stream = document.getElementById('fm-stream').value.trim();
+            const lecturer = document.getElementById('fm-lecturer').value.trim();
+            const totalHours = parseFloat(document.getElementById('fm-hours').value) || 26;
+            const startDate = document.getElementById('fm-startdate').value;
+
+            const newModule = {
+                id: 'mod-' + Date.now(),
+                code,
+                title,
+                stream,
+                lecturer,
+                totalHours,
+                startDate,
+                slots: [
+                    { id: 's1', day: '1', startTime: '09:00', endTime: '11:00', duration: 2 }
+                ],
+                assessments: [
+                    { id: 'a1', title: 'TA: Topic Assessment', reqHours: Math.round(totalHours * 0.35), duration: 2 },
+                    { id: 'a2', title: 'IA: Integrated Assessment', reqHours: totalHours, duration: 2 }
+                ]
+            };
+
+            modulesData.push(newModule);
+            selectedModuleId = newModule.id;
+            closeModal('modal-module');
+            showToast(`Module ${code} saved successfully`);
+            renderAll();
+        }
+
+        function handleSaveSlot(e) {
+            e.preventDefault();
+            const mod = getSelectedModule();
+            if (!mod) return;
+
+            const day = document.getElementById('fs-day').value;
+            const startTime = document.getElementById('fs-starttime').value;
+            const endTime = document.getElementById('fs-endtime').value;
+            const duration = parseFloat(document.getElementById('fs-duration').value) || 2;
+
+            mod.slots.push({
+                id: 's-' + Date.now(),
+                day,
+                startTime,
+                endTime,
+                duration
+            });
+
+            closeModal('modal-slot');
+            showToast('Weekly timetable slot added');
+            renderAll();
+        }
+
+        function deleteSlot(slotId) {
+            const mod = getSelectedModule();
+            if (!mod) return;
+            mod.slots = mod.slots.filter(s => s.id !== slotId);
+            showToast('Slot removed');
+            renderAll();
+        }
+
+        function handleSaveAssessment(e) {
+            e.preventDefault();
+            const mod = getSelectedModule();
+            if (!mod) return;
+
+            const title = document.getElementById('fa-title').value.trim();
+            const reqHours = parseFloat(document.getElementById('fa-reqhours').value) || 8;
+            const duration = parseFloat(document.getElementById('fa-duration').value) || 2;
+
+            mod.assessments.push({
+                id: 'a-' + Date.now(),
+                title,
+                reqHours,
+                duration
+            });
+
+            closeModal('modal-assessment');
+            showToast('Assessment target added');
+            renderAll();
+        }
+
+        function deleteAssessment(assId) {
+            const mod = getSelectedModule();
+            if (!mod) return;
+            mod.assessments = mod.assessments.filter(a => a.id !== assId);
+            showToast('Assessment rule removed');
+            renderAll();
+        }
+
+        function quickAddActivityForDate(dateIsoStr) {
+            switchTab('activities');
+            const actDateInput = document.getElementById('act-date');
+            if (actDateInput) actDateInput.value = dateIsoStr;
+            const titleInput = document.getElementById('act-title');
+            if (titleInput) titleInput.focus();
+            showToast(`Manual entry date set to ${dateIsoStr}`);
+        }
+
+        function resetToDemoData() {
+            modulesData = JSON.parse(JSON.stringify(INITIAL_MODULES));
+            schoolActivities = JSON.parse(JSON.stringify(DEFAULT_SCHOOL_ACTIVITIES));
+            selectedModuleId = modulesData[0].id;
+            showToast('Reset to default VTC sample data');
+            renderAll();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            const btnIds = ['calculator', 'calendar', 'activities', 'report'];
+            btnIds.forEach(id => {
+                const btn = document.getElementById(`tab-btn-${id}`);
+                if (!btn) return;
+                if (id === tabId) {
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 bg-white text-slate-900 shadow-sm";
+                } else {
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-t-lg transition flex items-center gap-2 text-slate-400 hover:text-slate-200";
+                }
+            });
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+
+        function openModuleModal() {
+            const form = document.getElementById('form-module');
+            if (form) form.reset();
+            const startDateInput = document.getElementById('fm-startdate');
+            if (startDateInput) startDateInput.value = '2026-09-01';
+            openModal('modal-module');
+        }
+
+        function openTimetableSlotModal() {
+            const form = document.getElementById('form-slot');
+            if (form) form.reset();
+            openModal('modal-slot');
+        }
+
+        function openAssessmentModal() {
+            const form = document.getElementById('form-assessment');
+            if (form) form.reset();
+            openModal('modal-assessment');
+        }
+
+        function formatDateISO(d) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function getDayName(dayIndex) {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return days[parseInt(dayIndex, 10)] || '';
+        }
+
+        function formatImpact(impactStr) {
+            switch(impactStr) {
+                case 'FULL_SUSPENSION': return '🔴 Full Day Suspension';
+                case 'NO_ASSESSMENT': return '🟠 Classes Allowed (No Assessments)';
+                case 'ASSESSMENT_ONLY': return '🔵 Assessment Window (Lessons Suspended)';
+                case 'INFO_ONLY': return '🟢 Normal Schedule (Info Only)';
+                default: return impactStr;
+            }
+        }
+
+        function isTimeOverlap(start1, end1, start2, end2) {
+            return (start1 < end2 && start2 < end1);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            if (msgEl) msgEl.textContent = msg;
+            if (toast) {
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 3000);
+            }
+        }
+
+        window.onload = function() {
+            renderAll();
+        }
+    </script>
+</body>
+</html>
+```sextension
