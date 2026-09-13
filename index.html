@@ -136,8 +136,8 @@
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 flex items-start gap-3">
                 <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
                 <div>
-                    <span class="font-bold block text-amber-950 mb-0.5">VTC Youth College Assessment Policy Notice:</span>
-                    <p class="text-amber-800">Topic Assessments (TA), Integrated Assessments (IA), and Institutional Assessment Periods must strictly be held on <strong>weekdays (Monday through Friday)</strong>. The calculation engine automatically postpones assessment triggers from weekends to the next weekday session.</p>
+                    <span class="font-bold block text-amber-950 mb-0.5">VTC Youth College Assessment Policy & Hour Cap Notice:</span>
+                    <p class="text-amber-800">Topic Assessments (TA), Integrated Assessments (IA), and Institutional Assessment Periods must strictly be held on <strong>weekdays (Monday through Friday)</strong>. The calculation engine automatically stops delivery exactly at the module's total contact hours (e.g. 26h, 45h, 60h), ensuring no extra sessions are scheduled after the final hour.</p>
                 </div>
             </div>
 
@@ -150,8 +150,8 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                        <h3 class="font-bold text-slate-800 text-sm">Calculated Module Delivery & Assessment Timeline</h3>
-                        <p class="text-xs text-slate-500">Cumulative contact hours are calculated session-by-session. You can manually cancel/delete sessions or add makeup/extra lesson dates below.</p>
+                        <h3 class="font-bold text-slate-800 text-sm">Calculated Module Delivery & Assessment Timeline (Capped at Total Hours)</h3>
+                        <p class="text-xs text-slate-500">Cumulative contact hours stop strictly at the module's target hours. You can manually cancel/delete sessions or add makeup/extra lesson dates below.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button onclick="openCustomSessionModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
@@ -388,7 +388,7 @@
                     </div>
 
                     <div>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">2. Detailed Delivery Log & Hour Accumulation</h4>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">2. Detailed Delivery Log & Hour Accumulation (Capped at Total Hours)</h4>
                         <table class="w-full text-left border border-slate-300 text-xs">
                             <thead class="bg-slate-100 font-bold border-b border-slate-300">
                                 <tr>
@@ -990,21 +990,43 @@
                 return a.slot.startTime.localeCompare(b.slot.startTime);
             });
 
-            // Calculate cumulative hours sequentially
+            // Calculate cumulative hours sequentially, strictly stopping at module.totalHours
             let runningHours = 0;
-            return rawSessions.map(sess => {
+            const finalizedSessions = [];
+
+            for (const sess of rawSessions) {
                 if (sess.isHoliday) {
-                    return sess;
+                    finalizedSessions.push(sess);
+                    continue;
                 }
-                runningHours += sess.duration;
-                return {
+
+                // If running hours have already reached totalHours, do not schedule any further active teaching sessions
+                if (runningHours >= module.totalHours) {
+                    continue;
+                }
+
+                let allocatedDuration = sess.duration;
+                // Cap the last session duration if it exceeds total hours
+                if (runningHours + allocatedDuration > module.totalHours) {
+                    allocatedDuration = module.totalHours - runningHours;
+                }
+
+                runningHours += allocatedDuration;
+                finalizedSessions.push({
                     ...sess,
-                    cumHours: Math.min(runningHours, module.totalHours)
-                };
-            });
+                    duration: allocatedDuration,
+                    cumHours: runningHours
+                });
+
+                if (runningHours >= module.totalHours) {
+                    break; // Stop collecting further sessions once total contact hours are fulfilled
+                }
+            }
+
+            return finalizedSessions;
         }
 
-        // Engine: Calculate Module Delivery Schedule and Assessment triggers with Weekday Enforcer
+        // Engine: Calculate Module Delivery Schedule and Assessment triggers with Weekday Enforcer & Strict Total Hour Cap
         function calculateModuleTimeline(module) {
             if (!module || !module.slots || module.slots.length === 0) return [];
 
@@ -1040,7 +1062,7 @@
                 }
 
                 teachingSessionIndex++;
-                const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
+                const isLastLesson = (teachingSessionIndex === totalTeachingSessions) || (sess.cumHours === module.totalHours);
                 const duration = sess.duration;
                 const cumHoursClamped = sess.cumHours;
 
@@ -1125,7 +1147,7 @@
                 if (sess.isHoliday) continue;
 
                 teachingSessionIndex++;
-                const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
+                const isLastLesson = (teachingSessionIndex === totalTeachingSessions) || (sess.cumHours === module.totalHours);
                 const isWeekendSession = (sess.dayOfWeek === 0 || sess.dayOfWeek === 6);
                 const cumHoursClamped = sess.cumHours;
 
@@ -1959,4 +1981,3 @@
     </script>
 </body>
 </html>
-```sextension
