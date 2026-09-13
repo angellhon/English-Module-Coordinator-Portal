@@ -151,10 +151,13 @@
                 <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm">Calculated Module Delivery & Assessment Timeline</h3>
-                        <p class="text-xs text-slate-500">Cumulative contact hours are calculated session-by-session based on weekly pattern and VTC calendar suspensions.</p>
+                        <p class="text-xs text-slate-500">Cumulative contact hours are calculated session-by-session. You can manually cancel/delete sessions or add makeup/extra lesson dates below.</p>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <label for="timeline-filter-type" class="text-xs font-bold text-slate-600 whitespace-nowrap flex items-center gap-1">
+                        <button onclick="openCustomSessionModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Custom Lesson / Date
+                        </button>
+                        <label for="timeline-filter-type" class="text-xs font-bold text-slate-600 whitespace-nowrap flex items-center gap-1 ml-2">
                             <i data-lucide="filter" class="w-3.5 h-3.5 text-indigo-600"></i> View Mode:
                         </label>
                         <select id="timeline-filter-type" onchange="renderCalculatedTimeline()" class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
@@ -175,6 +178,7 @@
                                 <th class="p-3 text-center">Cumulative Hours</th>
                                 <th class="p-3">Session Type / Event</th>
                                 <th class="p-3">Conflict Verification</th>
+                                <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="calculated-timeline-tbody" class="divide-y divide-slate-100">
@@ -532,6 +536,44 @@
         </div>
     </div>
 
+    <!-- Modal: Add Custom Lesson / Override Date -->
+    <div id="modal-custom-session" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="font-bold text-slate-800 text-sm">Add Custom Lesson Date / Makeup Class</h3>
+                <button onclick="closeModal('modal-custom-session')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="form-custom-session" onsubmit="handleSaveCustomSession(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Lesson Date</label>
+                    <input type="date" id="fcs-date" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Start Time</label>
+                        <input type="time" id="fcs-starttime" required value="09:00" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">End Time</label>
+                        <input type="time" id="fcs-endtime" required value="11:00" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Duration (Hours)</label>
+                    <input type="number" step="0.5" id="fcs-duration" required value="2" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Note / Description</label>
+                    <input type="text" id="fcs-note" placeholder="e.g. Makeup class for public holiday" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-custom-session')" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Add Lesson</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs z-50 transition transform duration-300 hidden">
         <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
@@ -557,7 +599,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 8, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 26, duration: 2 }
-                ]
+                ],
+                cancelledDates: [], // Array of ISO date strings explicitly cancelled/deleted by teacher
+                customSessions: [] // Array of added custom/makeup sessions {id, date, startTime, endTime, duration, note}
             },
             {
                 id: 'mod-ven1101',
@@ -573,7 +617,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 8, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 26, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             // Year 2 Modules
             {
@@ -591,7 +637,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 26, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 52, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven2101',
@@ -608,7 +656,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 26, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 52, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             // Year 3 Semester 1
             {
@@ -625,7 +675,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven2603',
@@ -641,7 +693,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven2302',
@@ -657,7 +711,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven2602',
@@ -673,7 +729,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             // Year 3 Semester 2
             {
@@ -690,7 +748,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 24, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven2604',
@@ -706,7 +766,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 16, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 30, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven3301',
@@ -722,7 +784,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 27, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 60, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven3601',
@@ -738,7 +802,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 21, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             // Year 3 Semester 3
             {
@@ -755,7 +821,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 27, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 60, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             },
             {
                 id: 'mod-ven3602',
@@ -771,7 +839,9 @@
                 assessments: [
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 21, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 45, duration: 2 }
-                ]
+                ],
+                cancelledDates: [],
+                customSessions: []
             }
         ];
 
@@ -841,45 +911,97 @@
             if (!module || !module.slots || module.slots.length === 0) return [];
 
             const rawSessions = [];
-            let currentCumHours = 0;
+            
+            // Ensure cancelledDates & customSessions exist on module object
+            if (!module.cancelledDates) module.cancelledDates = [];
+            if (!module.customSessions) module.customSessions = [];
+
+            // 1. Generate regular slot-based sessions
             let current = new Date(module.startDate);
             const maxDate = new Date(current);
-            maxDate.setMonth(maxDate.getMonth() + 8);
+            maxDate.setMonth(maxDate.getMonth() + 9);
 
-            while (currentCumHours < module.totalHours && current <= maxDate) {
-                const dayOfWeek = current.getDay();
-                const dateStr = formatDateISO(current);
+            // Collect all potential recurring slot dates up to maxDate
+            let tempDate = new Date(current);
+            while (tempDate <= maxDate) {
+                const dayOfWeek = tempDate.getDay();
+                const dateStr = formatDateISO(tempDate);
                 const matchingSlots = module.slots.filter(s => parseInt(s.day) === dayOfWeek);
 
                 for (const slot of matchingSlots) {
-                    if (currentCumHours >= module.totalHours) break;
-
+                    // Check if teacher explicitly cancelled this specific date
+                    const isCancelled = module.cancelledDates.includes(dateStr);
                     const matchingActs = findMatchingActivities(dateStr);
                     const suspensionAct = matchingActs.find(a => a.impact === 'FULL_SUSPENSION' || a.impact === 'ASSESSMENT_ONLY');
-                    
-                    if (suspensionAct) {
+
+                    if (isCancelled) {
+                        rawSessions.push({
+                            isHoliday: true,
+                            holiday: { title: 'Manually Cancelled by Teacher' },
+                            dateStr,
+                            dayOfWeek,
+                            slot,
+                            isCustom: false,
+                            isCancelledDate: true
+                        });
+                    } else if (suspensionAct) {
                         rawSessions.push({
                             isHoliday: true,
                             holiday: suspensionAct,
                             dateStr,
                             dayOfWeek,
-                            slot
+                            slot,
+                            isCustom: false
                         });
-                        continue;
+                    } else {
+                        rawSessions.push({
+                            isHoliday: false,
+                            dateStr,
+                            dayOfWeek,
+                            slot,
+                            duration: slot.duration,
+                            isCustom: false
+                        });
                     }
-
-                    currentCumHours += slot.duration;
-                    rawSessions.push({
-                        isHoliday: false,
-                        dateStr,
-                        dayOfWeek,
-                        slot,
-                        cumHours: Math.min(currentCumHours, module.totalHours)
-                    });
                 }
-                current.setDate(current.getDate() + 1);
+                tempDate.setDate(tempDate.getDate() + 1);
             }
-            return rawSessions;
+
+            // 2. Insert custom/makeup sessions
+            module.customSessions.forEach(cs => {
+                const parts = cs.date.split('-');
+                const csDateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                const dayOfWeek = csDateObj.getDay();
+                rawSessions.push({
+                    isHoliday: false,
+                    dateStr: cs.date,
+                    dayOfWeek: dayOfWeek,
+                    slot: { startTime: cs.startTime, endTime: cs.endTime },
+                    duration: cs.duration,
+                    isCustom: true,
+                    customId: cs.id,
+                    customNote: cs.note
+                });
+            });
+
+            // Sort all raw sessions chronologically by date and start time
+            rawSessions.sort((a, b) => {
+                if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
+                return a.slot.startTime.localeCompare(b.slot.startTime);
+            });
+
+            // Calculate cumulative hours sequentially
+            let runningHours = 0;
+            return rawSessions.map(sess => {
+                if (sess.isHoliday) {
+                    return sess;
+                }
+                runningHours += sess.duration;
+                return {
+                    ...sess,
+                    cumHours: Math.min(runningHours, module.totalHours)
+                };
+            });
         }
 
         // Engine: Calculate Module Delivery Schedule and Assessment triggers with Weekday Enforcer
@@ -887,8 +1009,6 @@
             if (!module || !module.slots || module.slots.length === 0) return [];
 
             const timeline = [];
-            let currentCumHours = 0;
-
             const rawSessions = getModuleSessions(module);
             const nonHolidaySessions = rawSessions.filter(s => !s.isHoliday);
             const totalTeachingSessions = nonHolidaySessions.length;
@@ -906,35 +1026,34 @@
                         dayName: getDayName(sess.dayOfWeek),
                         slotTime: `${sess.slot.startTime} - ${sess.slot.endTime}`,
                         duration: 0,
-                        cumHours: currentCumHours,
+                        cumHours: sess.cumHours || 0,
                         status: 'HOLIDAY',
                         title: `Suspended: ${sess.holiday.title}`,
                         isAssessment: false,
                         clash: false,
-                        clashReason: ''
+                        clashReason: '',
+                        isCustom: false,
+                        isCancelledDate: sess.isCancelledDate || false,
+                        dateStr: sess.dateStr
                     });
                     continue;
                 }
 
                 teachingSessionIndex++;
                 const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
-                const duration = sess.slot.duration;
-                currentCumHours += duration;
-                const cumHoursClamped = Math.min(currentCumHours, module.totalHours);
+                const duration = sess.duration;
+                const cumHoursClamped = sess.cumHours;
 
                 const noAssEvent = schoolActivities.find(a => a.date === sess.dateStr && a.impact === 'NO_ASSESSMENT');
                 const isWeekendSession = (sess.dayOfWeek === 0 || sess.dayOfWeek === 6);
 
                 let matchedAssessment = null;
 
-                // Assessments are strictly scheduled on weekdays (Mon-Fri)
                 if (!isWeekendSession) {
-                    // 1. If last weekday lesson, schedule IA (Integrated Assessment)
                     if (isLastLesson) {
                         matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id) && isIAAssessment(a));
                     }
 
-                    // 2. Schedule non-IA assessments reaching required contact hours
                     if (!matchedAssessment) {
                         for (const ass of pendingAssessments) {
                             if (!triggeredAssessments.has(ass.id) && !isIAAssessment(ass) && cumHoursClamped >= ass.reqHours) {
@@ -944,7 +1063,6 @@
                         }
                     }
 
-                    // 3. Fallback trigger
                     if (!matchedAssessment) {
                         for (const ass of pendingAssessments) {
                             if (!triggeredAssessments.has(ass.id) && cumHoursClamped >= ass.reqHours) {
@@ -953,11 +1071,8 @@
                             }
                         }
                     }
-                } else {
-                    // If it is the absolute final lesson of the module and it lands on a weekend, force trigger to flag clash error
-                    if (isLastLesson && pendingAssessments.some(a => !triggeredAssessments.has(a.id))) {
-                        matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id));
-                    }
+                } else if (isLastLesson && pendingAssessments.some(a => !triggeredAssessments.has(a.id))) {
+                    matchedAssessment = pendingAssessments.find(a => !triggeredAssessments.has(a.id));
                 }
 
                 if (matchedAssessment) {
@@ -965,6 +1080,8 @@
                 }
 
                 const clashDetails = checkForClashes(module.code, sess.dateStr, sess.slot.startTime, sess.slot.endTime, !!matchedAssessment, noAssEvent);
+
+                let sessionTitle = matchedAssessment ? `🎯 ASSESSMENT: ${matchedAssessment.title}` : (sess.isCustom ? `⭐ Custom Lesson: ${sess.customNote || 'Makeup/Extra'}` : `Regular Teaching Session`);
 
                 timeline.push({
                     sessionNo: sessionCounter++,
@@ -976,11 +1093,15 @@
                     duration: duration,
                     cumHours: cumHoursClamped,
                     status: matchedAssessment ? 'ASSESSMENT' : 'LESSON',
-                    title: matchedAssessment ? `🎯 ASSESSMENT: ${matchedAssessment.title}` : `Regular Teaching Session`,
+                    title: sessionTitle,
                     assessmentDetail: matchedAssessment,
                     isAssessment: !!matchedAssessment,
                     clash: clashDetails.hasClash,
-                    clashReason: clashDetails.reason
+                    clashReason: clashDetails.reason,
+                    isCustom: sess.isCustom || false,
+                    customId: sess.customId || null,
+                    isCancelledDate: false,
+                    dateStr: sess.dateStr
                 });
             }
 
@@ -996,7 +1117,6 @@
             const nonHolidaySessions = rawSessions.filter(s => !s.isHoliday);
             const totalTeachingSessions = nonHolidaySessions.length;
 
-            let currentCumHours = 0;
             let teachingSessionIndex = 0;
             const pendingAssessments = [...module.assessments];
             const triggeredAssessments = new Set();
@@ -1007,8 +1127,7 @@
                 teachingSessionIndex++;
                 const isLastLesson = (teachingSessionIndex === totalTeachingSessions);
                 const isWeekendSession = (sess.dayOfWeek === 0 || sess.dayOfWeek === 6);
-                currentCumHours += sess.slot.duration;
-                const cumHoursClamped = Math.min(currentCumHours, module.totalHours);
+                const cumHoursClamped = sess.cumHours;
 
                 let matchedAssessment = null;
 
@@ -1238,20 +1357,18 @@
             let hasAnyClash = false;
 
             if (timeline.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 text-xs">Please configure weekly timetable slots to calculate the session timeline.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 text-xs">Please configure weekly timetable slots to calculate the session timeline.</td></tr>`;
                 return;
             }
 
-            // Check clashes across full timeline first
             timeline.forEach(s => { if (s.clash) hasAnyClash = true; });
 
-            // Filter out routine calculation steps if 'ASSESSMENTS_ONLY' mode selected
             if (viewFilter === 'ASSESSMENTS_ONLY') {
                 timeline = timeline.filter(s => s.isAssessment || s.status === 'HOLIDAY');
             }
 
             if (timeline.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 text-xs">No assessments or holiday suspensions found for this filter.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 text-xs">No assessments or holiday suspensions found for this filter.</td></tr>`;
                 return;
             }
 
@@ -1265,6 +1382,9 @@
                 } else if (s.isAssessment) {
                     rowBg = 'bg-rose-50 hover:bg-rose-100/70 border-l-4 border-l-rose-500';
                     statusBadge = `<span class="bg-rose-600 text-white font-bold px-2.5 py-1 rounded shadow-sm">${s.title}</span>`;
+                } else if (s.isCustom) {
+                    rowBg = 'bg-indigo-50/50 hover:bg-indigo-100/40';
+                    statusBadge = `<span class="text-indigo-900 font-bold">${s.title}</span>`;
                 } else {
                     statusBadge = `<span class="text-slate-700">${s.title}</span>`;
                 }
@@ -1272,6 +1392,22 @@
                 let clashBadge = s.clash 
                     ? `<span class="bg-rose-100 text-rose-700 border border-rose-300 px-2 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> ${s.clashReason}</span>`
                     : `<span class="text-emerald-600 font-medium flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Clear</span>`;
+
+                // Action buttons for session row
+                let actionBtn = '';
+                if (s.status !== 'HOLIDAY' && !s.isCustom) {
+                    actionBtn = `<button onclick="cancelSessionDate('${s.dateStr}')" title="Cancel/Delete this lesson date" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 rounded text-[11px] font-semibold transition flex items-center gap-1">
+                        <i data-lucide="calendar-off" class="w-3 h-3"></i> Cancel Date
+                    </button>`;
+                } else if (s.status === 'HOLIDAY' && s.isCancelledDate) {
+                    actionBtn = `<button onclick="restoreSessionDate('${s.dateStr}')" title="Restore this cancelled date" class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[11px] font-semibold transition flex items-center gap-1">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Restore Date
+                    </button>`;
+                } else if (s.isCustom) {
+                    actionBtn = `<button onclick="deleteCustomSession('${s.customId}')" title="Delete custom session" class="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded text-[11px] font-semibold transition flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Delete Custom
+                    </button>`;
+                }
 
                 return `
                     <tr class="${rowBg} transition border-b border-slate-100">
@@ -1283,6 +1419,7 @@
                         <td class="p-3 text-center font-bold ${s.isAssessment ? 'text-rose-700 text-sm' : 'text-slate-800'}">${s.cumHours} / ${mod.totalHours} hrs</td>
                         <td class="p-3">${statusBadge}</td>
                         <td class="p-3">${clashBadge}</td>
+                        <td class="p-3 text-right whitespace-nowrap">${actionBtn}</td>
                     </tr>
                 `;
             }).join('');
@@ -1639,6 +1776,72 @@
 
             closeModal('modal-assessment');
             showToast('Assessment target added');
+            renderAll();
+        }
+
+        function cancelSessionDate(dateStr) {
+            const mod = getSelectedModule();
+            if (!mod) return;
+            if (!mod.cancelledDates) mod.cancelledDates = [];
+            if (!mod.cancelledDates.includes(dateStr)) {
+                mod.cancelledDates.push(dateStr);
+            }
+            showToast(`Lesson date ${dateStr} cancelled successfully`);
+            renderAll();
+        }
+
+        function restoreSessionDate(dateStr) {
+            const mod = getSelectedModule();
+            if (!mod) return;
+            if (mod.cancelledDates) {
+                mod.cancelledDates = mod.cancelledDates.filter(d => d !== dateStr);
+            }
+            showToast(`Lesson date ${dateStr} restored`);
+            renderAll();
+        }
+
+        function openCustomSessionModal() {
+            const form = document.getElementById('form-custom-session');
+            if (form) form.reset();
+            const dateInput = document.getElementById('fcs-date');
+            if (dateInput) {
+                const mod = getSelectedModule();
+                dateInput.value = mod?.startDate || formatDateISO(new Date());
+            }
+            openModal('modal-custom-session');
+        }
+
+        function handleSaveCustomSession(e) {
+            e.preventDefault();
+            const mod = getSelectedModule();
+            if (!mod) return;
+
+            const date = document.getElementById('fcs-date').value;
+            const startTime = document.getElementById('fcs-starttime').value;
+            const endTime = document.getElementById('fcs-endtime').value;
+            const duration = parseFloat(document.getElementById('fcs-duration').value) || 2;
+            const note = document.getElementById('fcs-note').value.trim();
+
+            if (!mod.customSessions) mod.customSessions = [];
+            mod.customSessions.push({
+                id: 'cs-' + Date.now(),
+                date,
+                startTime,
+                endTime,
+                duration,
+                note
+            });
+
+            closeModal('modal-custom-session');
+            showToast('Custom lesson date added successfully');
+            renderAll();
+        }
+
+        function deleteCustomSession(csId) {
+            const mod = getSelectedModule();
+            if (!mod || !mod.customSessions) return;
+            mod.customSessions = mod.customSessions.filter(cs => cs.id !== csId);
+            showToast('Custom lesson removed');
             renderAll();
         }
 
