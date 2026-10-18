@@ -69,15 +69,26 @@
         <!-- TAB 1: Calculator & Timeline -->
         <section id="tab-calculator" class="tab-content space-y-6">
             
-            <!-- Active Module Toolbar -->
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <label for="module-selector" class="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Active Module:</label>
-                    <select id="module-selector" onchange="onModuleSelect()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-96">
-                        <!-- Populated dynamically -->
-                    </select>
+            <!-- Active Module & Dynamic Start Date Toolbar -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+                    <!-- Module Selector -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label for="module-selector" class="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">Active Module:</label>
+                        <select id="module-selector" onchange="onModuleSelect()" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-80">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Dynamic Teaching Start Date Control -->
+                    <div class="flex items-center gap-2 bg-indigo-50/70 p-1.5 px-3 rounded-lg border border-indigo-100 shrink-0">
+                        <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                        <label for="md-start-date-input" class="text-xs font-bold text-indigo-900 whitespace-nowrap">Teaching Start Date:</label>
+                        <input type="date" id="md-start-date-input" onchange="updateModuleStartDate(this.value)" class="bg-white border border-indigo-300 rounded px-2 py-1 text-xs font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm cursor-pointer">
+                    </div>
                 </div>
-                <button onclick="openModuleModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-sm">
+
+                <button onclick="openModuleModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-sm shrink-0">
                     <i data-lucide="plus" class="w-4 h-4"></i> Add New DVE Module
                 </button>
             </div>
@@ -96,8 +107,8 @@
                         <span id="md-lecturer">Module Coordinator</span>
                     </p>
                     <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span class="text-slate-500">Teaching Start Date:</span>
-                        <span id="md-start-date" class="font-semibold text-slate-800">2026-09-01</span>
+                        <span class="text-slate-500">First Teaching Session Date:</span>
+                        <span id="md-start-date-display" class="font-semibold text-slate-800">2026-09-01</span>
                     </div>
                 </div>
 
@@ -137,7 +148,7 @@
                 <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
                 <div>
                     <span class="font-bold block text-amber-950 mb-0.5">VTC Youth College Assessment Policy & Hour Cap Notice:</span>
-                    <p class="text-amber-800">Topic Assessments (TA), Integrated Assessments (IA), and Institutional Assessment Periods must strictly be held on <strong>weekdays (Monday through Friday)</strong>. The calculation engine automatically stops delivery exactly at the module's total contact hours (e.g. 26h, 45h, 60h), ensuring no extra sessions are scheduled after the final hour.</p>
+                    <p class="text-amber-800">Topic Assessments (TA), Integrated Assessments (IA), and Institutional Assessment Periods must strictly be held on <strong>weekdays (Monday through Friday)</strong>. Adjusting the start date dynamically recalculates all contact hours and target assessment dates immediately.</p>
                 </div>
             </div>
 
@@ -210,7 +221,6 @@
                 </div>
 
                 <div class="flex items-center gap-3 w-full md:w-auto">
-                    <!-- Category Filter: Public Holidays, School Activities -->
                     <div class="flex items-center gap-2">
                         <label for="calendar-filter-type" class="text-xs font-bold text-slate-500 whitespace-nowrap">Category Filter:</label>
                         <select id="calendar-filter-type" onchange="renderCalendar()" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
@@ -600,8 +610,8 @@
                     { id: 'a1', title: 'TA: Topic Assessment', reqHours: 8, duration: 2 },
                     { id: 'a2', title: 'IA: Integrated Assessment', reqHours: 26, duration: 2 }
                 ],
-                cancelledDates: [], // Array of ISO date strings explicitly cancelled/deleted by teacher
-                customSessions: [] // Array of added custom/makeup sessions {id, date, startTime, endTime, duration, note}
+                cancelledDates: [], 
+                customSessions: []
             },
             {
                 id: 'mod-ven1101',
@@ -881,14 +891,12 @@
             return new Date(y, m, d).getDay(); // 0 = Sun, 6 = Sat
         }
 
-        // Helper: Test if assessment is an IA (Integrated Assessment)
         function isIAAssessment(ass) {
             if (!ass || !ass.title) return false;
             const t = ass.title.trim().toUpperCase();
             return t.startsWith('IA') || t.includes('INTEGRATED ASSESSMENT');
         }
 
-        // Helper: Find activities matching date string (ignoring weekend assessment periods)
         function findMatchingActivities(dateStr) {
             const dayOfWeek = getDayOfWeekFromISO(dateStr);
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
@@ -897,8 +905,6 @@
                 const start = a.date;
                 const end = a.endDate || a.date;
                 const isInRange = (dateStr >= start && dateStr <= end);
-                
-                // Exclude assessment periods on weekends
                 if (isInRange && a.type === 'ASSESSMENT_PERIOD' && isWeekend) {
                     return false;
                 }
@@ -906,22 +912,17 @@
             });
         }
 
-        // Helper: Calculate raw session list for module
         function getModuleSessions(module) {
             if (!module || !module.slots || module.slots.length === 0) return [];
 
             const rawSessions = [];
-            
-            // Ensure cancelledDates & customSessions exist on module object
             if (!module.cancelledDates) module.cancelledDates = [];
             if (!module.customSessions) module.customSessions = [];
 
-            // 1. Generate regular slot-based sessions
             let current = new Date(module.startDate);
             const maxDate = new Date(current);
             maxDate.setMonth(maxDate.getMonth() + 9);
 
-            // Collect all potential recurring slot dates up to maxDate
             let tempDate = new Date(current);
             while (tempDate <= maxDate) {
                 const dayOfWeek = tempDate.getDay();
@@ -929,7 +930,6 @@
                 const matchingSlots = module.slots.filter(s => parseInt(s.day) === dayOfWeek);
 
                 for (const slot of matchingSlots) {
-                    // Check if teacher explicitly cancelled this specific date
                     const isCancelled = module.cancelledDates.includes(dateStr);
                     const matchingActs = findMatchingActivities(dateStr);
                     const suspensionAct = matchingActs.find(a => a.impact === 'FULL_SUSPENSION' || a.impact === 'ASSESSMENT_ONLY');
@@ -967,7 +967,6 @@
                 tempDate.setDate(tempDate.getDate() + 1);
             }
 
-            // 2. Insert custom/makeup sessions
             module.customSessions.forEach(cs => {
                 const parts = cs.date.split('-');
                 const csDateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
@@ -984,13 +983,11 @@
                 });
             });
 
-            // Sort all raw sessions chronologically by date and start time
             rawSessions.sort((a, b) => {
                 if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
                 return a.slot.startTime.localeCompare(b.slot.startTime);
             });
 
-            // Calculate cumulative hours sequentially, strictly stopping at module.totalHours
             let runningHours = 0;
             const finalizedSessions = [];
 
@@ -1000,13 +997,11 @@
                     continue;
                 }
 
-                // If running hours have already reached totalHours, do not schedule any further active teaching sessions
                 if (runningHours >= module.totalHours) {
                     continue;
                 }
 
                 let allocatedDuration = sess.duration;
-                // Cap the last session duration if it exceeds total hours
                 if (runningHours + allocatedDuration > module.totalHours) {
                     allocatedDuration = module.totalHours - runningHours;
                 }
@@ -1019,14 +1014,13 @@
                 });
 
                 if (runningHours >= module.totalHours) {
-                    break; // Stop collecting further sessions once total contact hours are fulfilled
+                    break;
                 }
             }
 
             return finalizedSessions;
         }
 
-        // Engine: Calculate Module Delivery Schedule and Assessment triggers with Weekday Enforcer & Strict Total Hour Cap
         function calculateModuleTimeline(module) {
             if (!module || !module.slots || module.slots.length === 0) return [];
 
@@ -1130,7 +1124,6 @@
             return timeline;
         }
 
-        // Helper: Calculate timeline lightweight for cross-module clash checks
         function calculateModuleTimelineForClash(module) {
             if (!module || !module.slots || module.slots.length === 0) return [];
 
@@ -1215,7 +1208,6 @@
         function checkForClashes(currentCode, dateStr, startTime, endTime, isAssessment) {
             const dayOfWeek = getDayOfWeekFromISO(dateStr);
 
-            // Weekend Assessment Enforcement Check
             if (isAssessment && (dayOfWeek === 0 || dayOfWeek === 6)) {
                 return {
                     hasClash: true,
@@ -1296,6 +1288,14 @@
             }
         }
 
+        function updateModuleStartDate(newDate) {
+            const mod = getSelectedModule();
+            if (!mod || !newDate) return;
+            mod.startDate = newDate;
+            showToast(`Teaching start date updated to ${newDate}`);
+            renderAll();
+        }
+
         function renderSelectedModuleDetails() {
             const mod = getSelectedModule();
             if (!mod) return;
@@ -1304,13 +1304,15 @@
             const elStream = document.getElementById('md-stream');
             const elLecturer = document.getElementById('md-lecturer');
             const elHours = document.getElementById('md-total-hours');
-            const elStart = document.getElementById('md-start-date');
+            const elStartDisplay = document.getElementById('md-start-date-display');
+            const elStartInput = document.getElementById('md-start-date-input');
 
             if (elCode) elCode.textContent = mod.code;
             if (elStream) elStream.textContent = mod.stream;
             if (elLecturer) elLecturer.textContent = mod.lecturer;
             if (elHours) elHours.textContent = `${mod.totalHours} Hours`;
-            if (elStart) elStart.textContent = mod.startDate;
+            if (elStartDisplay) elStartDisplay.textContent = mod.startDate;
+            if (elStartInput) elStartInput.value = mod.startDate;
         }
 
         function renderTimetableSlots() {
@@ -1415,7 +1417,6 @@
                     ? `<span class="bg-rose-100 text-rose-700 border border-rose-300 px-2 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> ${s.clashReason}</span>`
                     : `<span class="text-emerald-600 font-medium flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Clear</span>`;
 
-                // Action buttons for session row
                 let actionBtn = '';
                 if (s.status !== 'HOLIDAY' && !s.isCustom) {
                     actionBtn = `<button onclick="cancelSessionDate('${s.dateStr}')" title="Cancel/Delete this lesson date" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 rounded text-[11px] font-semibold transition flex items-center gap-1">
@@ -1536,7 +1537,6 @@
                 const events = [];
 
                 matchingActs.forEach(act => {
-                    // Filter according to category choice
                     if (filterType === 'HOLIDAY' && act.type !== 'HOLIDAY') return;
                     if (filterType === 'ACTIVITY' && act.type === 'HOLIDAY') return;
 
